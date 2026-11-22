@@ -1,0 +1,18 @@
+{
+  "name": "pomodoro-focus-studio",
+"version": "1.0.0",
+"description": "FocusStudio: A clean Pomodoro Focus & Task Studio integrating weather, holiday, and advice APIs",
+"main": "server.js",
+"scripts": {
+  "start": "node server.js"
+},
+"keywords": [
+  "pomodoro",
+  "productivity",
+  "apis",
+  "devops",
+  "sateless"
+],
+"author": "Lilian Kamikazi",
+"License": "MIT"
+}

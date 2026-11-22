@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>25:00 - Pomodoro Timer</title>
+  <link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body data-mode="focus">
+  <div class="page" id="pageOverlay">
+    <header class="top-bar">
+      <div class="brand">Pomodoro Timer</div>
+      <div class="top-info">
+        <span id="weatherText">Loading weather...</span>
+        <span id="holidayText">Loading holiday...</span>
+        <span id="serverText"></span>
+      </div>
+    </header>
+
+    <!-- Left Side Icon Dock-->
+    <nav class="side-dock" aria-label="Quick tools">
+      <button id="statsBtn" class="side-btn" title="Today's completed sessions">
+        <i class="bx bx-trophy"></i>
+      </button>
+      <div class="side-divider"></div>
+      <button id="bgDimBtn" class="side-btn" title="Appearance">
+        <i class="bx bx-palette"></i>
+      </button>
+      <button id="settingsBtn" class="side-btn" title="Timer Settings">
+        <i class="bx bx-cog"></i>
+      </button>
+    </nav>
+
+    <main class="center-stage">
+      <div class="mode-tabs">
+        <button class="tab active" data-mode="focus">Focus <span id="focusCount">0</span></button>
+        <button class="tab" data-mode="shortBreak">Short Break <span id="shortBreakCount">0</span></button>
+        <button class="tab" data-mode="longBreak">Long Break <span id="longBreakCount">0</span></button>
+      </div>
+
+      <div class="timer-ring" id="timerRing">
+        <div class="timer-inner">
+          <div class="time-text" id="timeDisplay">25:00</div>
+          <div class="session-label">
+            <span class="dot"></span>
+            <span id="sessionLabel">Focus session</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="quote" id="adviceText" title="Click for new advice">"Loading quote..."</p>
+
+      <div class="control-dock">
+        <button id="resetBtn" class="dock-btn">Reset</button>
+        <button id="startPauseBtn" class="start-btn">Start</button>
+        <button id="tasksToggleBtn" class="dock-btn">Tasks</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Tasks Drawer -->
+  <aside id="tasksPanel" class="tasks-panel hidden">
+    <div class="panel-header">
+      <h2>Tasks (<span id="taskStats">0 / 0</span>)</h2>
+      <button id="closeTasksBtn" class="text-btn">Close</button>
+    </div>
+
+    <form id="taskForm" class="task-form">
+      <input type="text" id="taskTitle" placeholder="Add a task..." required autocomplete="off">
+      <div class="form-row">
+        <select id="taskPriority">
+          <option value="high">High</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <select id="taskPomodoros">
+          <option value="1">1 session</option>
+          <option value="2">2 sessions</option>
+          <option value="3">3 sessions</option>
+          <option value="4">4 sessions</option>
+        </select>
+        <input type="text" id="taskTag" placeholder="Tag" maxlength="15">
+      </div>
+      <button type="submit" class="add-btn">Add Task</button>
+    </form>
+
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="Search tasks or tags...">
+      <div class="toolbar-row">
+        <select id="statusFilter">
+          <option value="all">All</option>
+          <option value="active">Active</option>
+          <option value="completed">Completed</option>
+        </select>
+        <select id="priorityFilter">
+          <option value="all">All Priorities</option>
+          <option value="high">High</option>
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <select id="sortBy">
+          <option value="newest">Newest</option>
+          <option value="priority">Priority</option>
+          <option value="pomodoros">Pomodoros</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="taskList" class="task-list"></div>
+    <p id="emptyState" class="empty-state hidden">No tasks found.</p>
+  </aside>
+
+  <!-- Side Tool Modals -->
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <!-- Today's Challenge Modal -->
+    <div id="challengeModal" class="modal-card hidden">
+      <div class="modal-header">
+        <span class="modal-kicker">TODAY'S CHALLENGE</span>
+        <button class="close-modal text-btn">X</button>
+      </div>
+      <h2 id="challengeHeading">Today, I want to focus for a total of...</h2>
+      <div class="steppers-row">
+        <div class="stepper-box">
+          <button type="button" id="hoursMinus" class="step-btn">-</button>
+          <div class="step-val">
+            <strong id="goalHours">2</strong>
+            <span>Hours</span>
+          </div>
+          <button type="button" id="hoursPlus" class="step-btn">+</button>
+        </div>
+        <div class="stepper-box">
+          <button type="button" id="minsMinus" class="step-btn">-</button>
+          <div class="step-val">
+            <strong id="goalMins">00</strong>
+            <span>Minutes</span>
+          </div>
+          <button type="button" id="minsPlus" class="step-btn">+</button>
+        </div>
+      </div>
+      <p class="modal-note">All your focus sessions today add up. Breaks and pauses don't count.</p>
+      <p id="challengeProgress" class="challenge-progress"></p>
+      <button id="acceptChallengeBtn" class="modal-primary-btn">Accept challenge</button>
+    </div>
+
+    <!-- Timer Settings Modal -->
+    <div id="settingsModal" class="modal-card hidden">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="close-modal text-btn">X</button>
+      </div>
+
+      <div class="modal-section">
+        <span class="section-title">Session lengths</span>
+        <div class="length-grid">
+          <div class="length-item">
+            <span class="length-label">Focus</span>
+            <div class="stepper-box compact">
+              <button type="button" class="len-btn" data-target="focus" data-delta="-1">-</button>
+              <div class="step-val"><strong id="setFocusVal">25</strong><span>min</span></div>
+              <button type="button" class="len-btn" data-target="focus" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="length-item">
+            <span class="length-label">Short break</span>
+            <div class="stepper-box compact">
+              <button type="button" class="len-btn" data-target="shortBreak" data-delta="-1">-</button>
+              <div class="step-val"><strong id="setShortVal">5</strong><span>min</span></div>
+              <button type="button" class="len-btn" data-target="shortBreak" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="length-item">
+            <span class="length-label">Long Break</span>
+            <div class="stepper-box compact">
+              <button type="button" class="len-btn" data-target="longBreak" data-delta="-1">-</button>
+              <div class="step-val"><strong id="setLongVal">15</strong><span>min</span></div>
+              <button type="button" class="len-btn" data-target="longBreak" data-delta="1">+</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="resetCountersBtn" class="secondary-btn">Reset current counters</button>
+      </div>
+
+      <div class="modal-section">
+        <span class="section-title">Auto-start</span>
+        <label class="toggle-row">
+          <span>Auto-start breaks</span>
+          <input type="checkbox" id="autoBreaksToggle" class="switch">
+        </label>
+        <label class="toggle-row">
+          <span>Auto-start focus</span>
+          <input type="checkbox" id="autoFocusToggle" class="switch">
+        </label>
+      </div>
+
+      <div class="modal-section">
+        <label class="toggle-row">
+          <span class="section-title">Alarm</span>
+          <input type="checkbox" id="alarmToggle" class="switch" checked>
+        </label>
+        <div class="sound-pills" id="soundPills">
+          <button type="button" class="pill-opt active" data-sound="chime">Chime</button>
+          <button type="button" class="pill-opt" data-sound="bell">Bell</button>
+          <button type="button" class="pill-opt" data-sound="digital">Digital</button>
+          <button type="button" class="pill-opt" data-sound="soft">Soft</button>
+        </div>
+        <div class="volume-row">
+          <span>Volume</span>
+          <input type="range" id="volumeSlider" min="0" max="100" value="80">
+          <span id="volumeText">80%</span>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <span class="section-title">API Location &amp; Holidays</span>
+        <div class="api-inputs">
+          <label>City (Weather)
+            <input type="text" id="apiCityInput" placeholder="e.g. Kigali, Nairobi, London">
+          </label>
+          <label>Country Code (Holidays)
+            <input type="text" id="apiCountryInput" placeholder="e.g. RW, KE, US, GB" maxlength="2">
+          </label>
+        </div>
+        <p id="apiError" class="form-error hidden"></p>
+        <button type="button" id="saveApiBtn" class="modal-primary-btn">Apply API Settings</button>
+      </div>
+    </div>
+
+    <!-- Aesthetics Modal -->
+    <div id="appearanceModal" class="modal-card hidden">
+      <div class="modal-header">
+        <h2>Aesthetics</h2>
+        <button class="close-modal text-btn">X</button>
+      </div>
+
+      <div class="modal-section">
+        <span class="section-title">Timer style</span>
+        <div class="style-grid">
+          <button type="button" class="style-card active" data-style="ring">
+            <div class="preview-ring">25:00</div>
+            <span>Ring</span>
+          </button>
+          <button type="button" class="style-card" data-style="numbers">
+            <div class="preview-num">25:00</div>
+            <span>Numbers only</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <span class="section-title">Background</span>
+        <div class="dim-options">
+          <button type="button" class="dim-btn" data-scrim="rgba(0, 0, 0, 0.25)">Light</button>
+          <button type="button" class="dim-btn" data-scrim="rgba(0, 0, 0, 0.45)">Medium</button>
+          <button type="button" class="dim-btn" data-scrim="rgba(0, 0, 0, 0.68)">Dark</button>
+        </div>
+        <label class="upload-box">
+          <span>Your photo (upload background)</span>
+          <input type="file" id="bgFileInput" accept="image/*">
+        </label>
+      </div>
+
+      <div class="modal-section">
+        <span class="section-title">Accent</span>
+        <div class="swatches" id="accentSwatches">
+          <button type="button" class="swatch" data-color="#e08e45" style="background:#e08e45" title="Amber"></button>
+          <button type="button" class="swatch" data-color="#74b488" style="background:#74b488" title="Sage"></button>
+          <button type="button" class="swatch" data-color="#6ba3be" style="background:#6ba3be" title="Teal"></button>
+          <button type="button" class="swatch" data-color="#e06c75" style="background:#e06c75" title="Coral"></button>
+          <button type="button" class="swatch" data-color="#e5c07b" style="background:#e5c07b" title="Gold"></button>
+          <button type="button" class="swatch" data-color="#9b7bff" style="background:#9b7bff"
+            title="Lavender"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="apis.js"></script>
+  <script src="tasks.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
